@@ -1,0 +1,14 @@
+{
+  "ticketIntervalSec": 60,
+  "ticketsBeforePause": 100,
+  "pauseMinMin": 1,
+  "pauseMaxMin": 30,
+  "stakeMin": 100,
+  "stakeMax": 500,
+  "legsMin": 1,
+  "legsMax": 7,
+  "singleProb": 0.30,
+  "footballProb": 0.50,
+  "maxOdds": 5,
+  "maxHoursAhead": 24
+}

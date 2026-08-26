@@ -1,0 +1,15 @@
+{
+  "name": "platforma-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Load-test bot za kladionicu (SinglBet) — simulira igrace da se vidi kako platforma trpi opterecenje",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/index.ts",
+    "one": "node src/index.ts --bots=1",
+    "check": "node --check src/index.ts"
+  }
+}
