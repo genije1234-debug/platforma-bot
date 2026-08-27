@@ -13,6 +13,7 @@ function main(): void {
 
   console.log("=== PLATFORMA BOT ===");
   console.log(`Meta:        ${config.baseUrl}`);
+  console.log(`Faza:        ${config.mode.toUpperCase()}${config.mode === "live" ? " (uzivo)" : " (prematch, mecevi <=24h)"}`);
   console.log(`Botova:      ${accounts.length}`);
   console.log(`Ritam:       1 tiket / ${config.ticketIntervalSec}s po botu`);
   console.log(`Parovi:      ${config.legsMin}-${config.legsMax} (singl ${Math.round(config.singleProb * 100)}%)`);

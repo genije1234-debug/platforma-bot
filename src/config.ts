@@ -7,8 +7,21 @@ import { dirname, join } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
+function loadCliEarly(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const a of process.argv.slice(2)) {
+    const m = a.match(/^--([^=]+)=(.*)$/);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
+}
+
 function loadEnvFile(): Record<string, string> {
-  const p = join(ROOT, ".env");
+  // --env=putanja bira drugi fajl (za odvojenu flotu, npr. .env.live).
+  const envName = loadCliEarly()["env"] || ".env";
+  const p = envName.includes("/") || envName.includes("\\") || envName.includes(":")
+    ? envName
+    : join(ROOT, envName);
   const out: Record<string, string> = {};
   if (!existsSync(p)) return out;
   for (const raw of readFileSync(p, "utf8").split(/\r?\n/)) {
@@ -94,9 +107,15 @@ function deriveWsUrl(): string {
   return `${proto}//${u.host}/ws/prematch`;
 }
 
+// Faza igre: "prematch" (podrazumevano) ili "live".
+const mode = (pick("mode", "MODE", "mode", "prematch").toLowerCase() === "live"
+  ? "live"
+  : "prematch") as "prematch" | "live";
+
 export const config = {
   baseUrl,
   wsUrl: deriveWsUrl(),
+  mode,
   accounts: parseAccounts(),
   // Ako je zadat --bots=N, ogranici broj botova (za probu). Inace = broj naloga.
   botLimit: cli["bots"] != null ? Math.max(1, parseInt(cli["bots"], 10) || 1) : null,

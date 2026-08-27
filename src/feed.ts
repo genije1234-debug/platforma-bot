@@ -68,15 +68,24 @@ function extractSelections(ev: any): Selection[] {
   return out;
 }
 
-/** Povuci prematch ponudu i vrati meceve sa validnim selekcijama. */
-export async function fetchOffer(http: HttpClient): Promise<EventLite[]> {
-  const res = await http.get("/api/events?live=0", { headers: { Accept: "application/json" } });
+/**
+ * Povuci ponudu (prematch ili live) i vrati meceve sa validnim selekcijama.
+ * mode="live" cita ?live=1 i zadrzava uzivo meceve; "prematch" cita ?live=0.
+ */
+export async function fetchOffer(
+  http: HttpClient,
+  mode: "prematch" | "live" = "prematch",
+): Promise<EventLite[]> {
+  const liveFlag = mode === "live" ? 1 : 0;
+  const res = await http.get(`/api/events?live=${liveFlag}`, { headers: { Accept: "application/json" } });
   if (!res.ok) throw new Error(`/api/events HTTP ${res.status}`);
   const data = await res.json();
   const events: any[] = Array.isArray(data) ? data : Array.isArray(data?.events) ? data.events : [];
   const list: EventLite[] = [];
   for (const ev of events) {
-    if (ev?.removed || ev?.suspend || ev?.live) continue;
+    if (ev?.removed || ev?.suspend) continue;
+    // prematch mod odbacuje live meceve; live mod uzima samo live.
+    if (mode === "live" ? !ev?.live : ev?.live) continue;
     const sels = extractSelections(ev);
     if (!sels.length) continue;
     list.push({

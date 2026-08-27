@@ -25,10 +25,12 @@ export function buildTicket(offer: EventLite[]): Selection[] {
   const now = Math.floor(Date.now() / 1000);
   const horizon = now + config.maxHoursAhead * 3600;
 
-  // Kandidati: mec u prozoru [sada, +24h] i ima bar jednu selekciju u granici kvote.
-  const pool = offer.filter(
-    (ev) => ev.kickoff > now && ev.kickoff <= horizon && eligibleOutcomes(ev).length > 0,
-  );
+  // Prematch: mec u prozoru [sada, +24h]. Live: mec je vec poceo, bez prozora.
+  const inWindow = (ev: EventLite): boolean =>
+    config.mode === "live" ? true : ev.kickoff > now && ev.kickoff <= horizon;
+
+  // Kandidati: prolaze prozor i imaju bar jednu selekciju u granici kvote.
+  const pool = offer.filter((ev) => inWindow(ev) && eligibleOutcomes(ev).length > 0);
   if (!pool.length) return [];
 
   const football = pool.filter(isFootball);

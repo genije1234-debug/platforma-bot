@@ -74,8 +74,8 @@ export class Bot {
     // 1) Ocisti eventualni zaostali slip iz sesije.
     await this.postSafe("/bet/remove-all", {});
 
-    // 2) Ponuda.
-    const offer = await fetchOffer(this.session.http);
+    // 2) Ponuda (prematch ili live prema modu).
+    const offer = await fetchOffer(this.session.http, config.mode);
     if (!offer.length) {
       this.log("ponuda prazna — preskacem rundu");
       return;

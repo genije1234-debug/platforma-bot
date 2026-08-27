@@ -2,9 +2,11 @@ node_modules/
 dist/
 build/
 
+# Svi .env fajlovi sa kredencijalima; primeri (.example) su dozvoljeni.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.live.example
 
 reports/*
 !reports/.gitkeep
