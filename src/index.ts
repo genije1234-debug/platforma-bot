@@ -27,7 +27,7 @@ function main(): void {
 
   // Svi krecu istovremeno (bez rampe) — svaki bot je svoj async lanac.
   for (let i = 0; i < accounts.length; i++) {
-    const bot = new Bot(accounts[i], i + 1);
+    const bot = new Bot(accounts[i], i + 1, accounts.length);
     bot.start().catch((e) => console.error(`bot#${i + 1} pao:`, e));
   }
 }

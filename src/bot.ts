@@ -22,9 +22,11 @@ export class Bot {
   private fail = 0;
   private acc: Account;
   private id: number;
-  constructor(acc: Account, id: number) {
+  private total: number;
+  constructor(acc: Account, id: number, total: number) {
     this.acc = acc;
     this.id = id;
+    this.total = total;
     this.session = new Session(config.baseUrl, acc.username, acc.password);
   }
 
@@ -45,6 +47,17 @@ export class Bot {
       this.log(`login greska: ${(e as Error).message}`);
       return;
     }
+
+    // LIVE: ravnomeran pocetni pomak, da botovi ne gadjaju u talasima nego
+    // razvuceno preko celog minuta (svaki svoju sekundu). Prematch krece odmah.
+    if (config.mode === "live" && this.total > 1) {
+      const offsetMs = Math.round(((this.id - 1) / this.total) * config.ticketIntervalSec * 1000);
+      if (offsetMs > 0) {
+        this.log(`pomak ${(offsetMs / 1000).toFixed(1)}s (ravnomerno razvlacenje)`);
+        await sleep(offsetMs);
+      }
+    }
+
     // Beskonacna petlja; prekid je Ctrl+C.
     for (;;) {
       const started = Date.now();
