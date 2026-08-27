@@ -3,6 +3,7 @@ import { config, type Account } from "./config.ts";
 import { Session } from "./session.ts";
 import { fetchOffer } from "./feed.ts";
 import { buildTicket, slipKey, randomStake } from "./pick.ts";
+import { extractNotify } from "./http.ts";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -128,32 +129,44 @@ export class Bot {
       ...(this.session.csrf ? { _token: this.session.csrf } : {}),
     });
 
-    // 302 je uspeh SAMO ako ne vodi na login (izgubljena sesija).
+    // Odgovor je 302 (redirect na stranicu sa porukom) ili 200. Da bismo znali
+    // ISTINU (tiket kreiran vs. odbijen), moramo procitati flesovanu poruku
+    // (notify) sa ciljne stranice — platforma na skoro sve ishode vraca 302.
     const loc = res.headers.get("location") ?? "";
-    if (res.status >= 300 && res.status < 400) {
-      if (/login/i.test(loc)) {
-        this.fail++;
-        this.log("ODBIJEN: sesija istekla (redirect na login)");
-        return;
-      }
-      this.ok++;
-      this.log(`ODIGRAN: ${added} par(ova), ulog ${stake} RSD (redirect ${loc || "back"})`);
+    if (/login/i.test(loc)) {
+      this.fail++;
+      this.log("ODBIJEN: sesija istekla (redirect na login)");
       return;
     }
 
-    const body = await res.text();
-    if (/name=["']password["']/i.test(body)) {
+    // Pribavi stranicu sa porukom.
+    let pageHtml: string;
+    if (res.status >= 300 && res.status < 400 && loc) {
+      pageHtml = await (await this.session.http.get(loc)).text();
+    } else {
+      pageHtml = await res.text();
+    }
+
+    if (/name=["']password["']/i.test(pageHtml) && !extractNotify(pageHtml).length) {
       this.fail++;
       this.log("ODBIJEN: nije ulogovan");
       return;
     }
-    const rejected = /nedovoljno|error|greska|nije /i.test(body);
-    if (rejected) {
-      this.fail++;
-      this.log(`ODBIJEN (HTTP ${res.status}): ${body.replace(/\s+/g, " ").slice(0, 140)}`);
-    } else {
+
+    const notify = extractNotify(pageHtml);
+    const success = notify.find((n) => n[0] === "success");
+    const error = notify.find((n) => n[0] === "error");
+
+    if (success) {
       this.ok++;
-      this.log(`ODIGRAN: ${added} par(ova), ulog ${stake} RSD (HTTP ${res.status})`);
+      this.log(`ODIGRAN: ${added} par(ova), ulog ${stake} RSD — "${success[1]}"`);
+    } else if (error) {
+      this.fail++;
+      this.log(`ODBIJEN: "${error[1]}"`);
+    } else {
+      // Nema jasne poruke — ne lazi da je uspeh; obelezi kao neizvesno.
+      this.fail++;
+      this.log(`NEIZVESNO (HTTP ${res.status}, redirect ${loc || "-"}) — bez notify poruke`);
     }
   }
 

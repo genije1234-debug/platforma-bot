@@ -78,6 +78,25 @@ export class HttpClient {
   }
 }
 
+/**
+ * Iz HTML-a izvuci flešovane poruke (notify).
+ * Platforma ih upisuje kao: const notifications = [["success","..."],...];
+ * Vraca niz parova [tip, poruka]; tip je "success" | "error" | "warning" | "info".
+ */
+export function extractNotify(html: string): Array<[string, string]> {
+  const m = html.match(/const notifications\s*=\s*(\[[\s\S]*?\])\s*;/);
+  if (!m) return [];
+  try {
+    const arr = JSON.parse(m[1]);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter((x) => Array.isArray(x) && x.length >= 2)
+      .map((x) => [String(x[0]), String(x[1])] as [string, string]);
+  } catch {
+    return [];
+  }
+}
+
 /** Iz HTML-a izvuci Laravel _token (meta csrf-token ili hidden input). */
 export function extractCsrf(html: string): string | null {
   const meta = html.match(/<meta[^>]+name=["']csrf-token["'][^>]+content=["']([^"']+)["']/i);
