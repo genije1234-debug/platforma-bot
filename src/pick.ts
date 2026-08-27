@@ -15,6 +15,18 @@ function choice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/** Izbor broja parova po ponderisanoj raspodeli (live mod). */
+function pickWeightedLegs(): number {
+  const w = config.liveLegWeights;
+  const total = w.reduce((s, x) => s + x.weight, 0);
+  let r = Math.random() * total;
+  for (const x of w) {
+    r -= x.weight;
+    if (r < 0) return x.legs;
+  }
+  return w[w.length - 1].legs;
+}
+
 /** Selekcije jednog meca koje prolaze granicu kvote. */
 function eligibleOutcomes(ev: EventLite): Selection[] {
   return ev.outcomes.filter((o) => o.odds > 1 && o.odds <= config.maxOdds);
@@ -37,10 +49,14 @@ export function buildTicket(offer: EventLite[]): Selection[] {
   const other = pool.filter((ev) => !isFootball(ev));
 
   // Koliko parova.
+  //  - LIVE: po zadatoj raspodeli (npr. 50% singl, 25% 2, 20% 3, 5% 4).
+  //  - PREMATCH: 30% singl, inace 2..legsMax (kao do sada).
   let legs =
-    Math.random() < config.singleProb
-      ? 1
-      : randInt(Math.max(2, config.legsMin), config.legsMax);
+    config.mode === "live"
+      ? pickWeightedLegs()
+      : Math.random() < config.singleProb
+        ? 1
+        : randInt(Math.max(2, config.legsMin), config.legsMax);
   legs = Math.min(legs, pool.length);
 
   const usedEvents = new Set<string>();

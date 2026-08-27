@@ -112,10 +112,27 @@ const mode = (pick("mode", "MODE", "mode", "prematch").toLowerCase() === "live"
   ? "live"
   : "prematch") as "prematch" | "live";
 
+// LIVE raspodela broja parova: "parovi:procenat" parovi razdvojeni zapetom.
+// Podrazumevano po dogovoru: 50% singl, 25% sa 2, 20% sa 3, 5% sa 4.
+function parseLegWeights(): Array<{ legs: number; weight: number }> {
+  const raw = pick("live-leg-weights", "LIVE_LEG_WEIGHTS", "liveLegWeights", "1:50,2:25,3:20,4:5");
+  const out: Array<{ legs: number; weight: number }> = [];
+  for (const part of raw.split(",")) {
+    const [l, w] = part.split(":");
+    const legs = parseInt((l ?? "").trim(), 10);
+    const weight = Number((w ?? "").trim());
+    if (Number.isFinite(legs) && legs >= 1 && Number.isFinite(weight) && weight > 0) {
+      out.push({ legs, weight });
+    }
+  }
+  return out.length ? out : [{ legs: 1, weight: 1 }];
+}
+
 export const config = {
   baseUrl,
   wsUrl: deriveWsUrl(),
   mode,
+  liveLegWeights: parseLegWeights(),
   accounts: parseAccounts(),
   // Ako je zadat --bots=N, ogranici broj botova (za probu). Inace = broj naloga.
   botLimit: cli["bots"] != null ? Math.max(1, parseInt(cli["bots"], 10) || 1) : null,
